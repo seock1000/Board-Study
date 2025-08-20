@@ -1,6 +1,8 @@
 rootProject.name = 'seock1000-board'
 
 include 'common'
+include 'common:snowflake'
+
 include 'service'
 include 'service:article'
 include 'service:comment'
