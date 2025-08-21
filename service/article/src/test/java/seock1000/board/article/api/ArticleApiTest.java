@@ -1,4 +1,4 @@
-package seock1000.board.api;
+package seock1000.board.article.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
