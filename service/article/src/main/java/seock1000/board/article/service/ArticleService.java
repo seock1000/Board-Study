@@ -7,8 +7,11 @@ import seock1000.board.article.entity.Article;
 import seock1000.board.article.repository.ArticleRepository;
 import seock1000.board.article.service.request.ArticleCreateRequest;
 import seock1000.board.article.service.request.ArticleUpdateRequest;
+import seock1000.board.article.service.response.ArticlePageResponse;
 import seock1000.board.article.service.response.ArticleResponse;
 import seock1000.board.common.snowflake.Snowflake;
+
+import static seock1000.board.article.service.PageLimitCalculator.calculatePageLimit;
 
 @Service
 @RequiredArgsConstructor
@@ -39,4 +42,17 @@ public class ArticleService {
     public void delete(Long articleId) {
         articleRepository.deleteById(articleId);
     }
+
+    public ArticlePageResponse readAll(Long boardId, Long page, Long pageSize) {
+        return ArticlePageResponse.of(
+                articleRepository.findAll(boardId, (page - 1) * pageSize, pageSize).stream()
+                .map(ArticleResponse::from)
+                .toList(),
+                articleRepository.count(
+                        boardId,
+                        calculatePageLimit(page, pageSize, 10L)
+                )
+        );
+    }
+
 }

@@ -3,13 +3,17 @@ package seock1000.board.article.api;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import seock1000.board.article.ArticleApplication;
+import seock1000.board.article.service.response.ArticlePageResponse;
 import seock1000.board.article.service.response.ArticleResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIterator;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.RequestEntity.put;
 
@@ -99,8 +103,54 @@ public class ArticleApiTest {
         assertThat(read.getArticleId()).isNull();
     }
 
+    @Test
     void delete(Long articleId) {
         client.delete("/v1/articles/" + articleId);
+    }
+
+    @Test
+    void readAllTest() {
+        Long boardId = 1L;
+        Long page = 1L;
+        Long pageSize = 30L;
+
+        Long expectedCount = pageSize * page + 1;
+        String uri = String.format(
+                "/v1/articles?boardId=%d&page=%d&pageSize=%d",
+                boardId, page, pageSize
+        );
+
+        ArticlePageResponse response = client.getForObject(
+                uri,
+                ArticlePageResponse.class
+        );
+
+        assertThat(response).isNotNull();
+        assertThat(response.getArticles().size()).isLessThanOrEqualTo(pageSize.intValue());
+        assertThat(response.getArticles().stream().allMatch(a -> a.getBoardId().equals(boardId))).isTrue();
+        assertThat(response.getArticleCount()).isGreaterThanOrEqualTo(expectedCount);
+    }
+
+    @Test
+    void readAllTest2() {
+        Long boardId = 1L;
+        Long page = 50000L;
+        Long pageSize = 30L;
+
+        Long expectedCount = pageSize * page + 1;
+        String uri = String.format(
+                "/v1/articles?boardId=%d&page=%d&pageSize=%d",
+                boardId, page, pageSize
+        );
+
+        ArticlePageResponse response = client.getForObject(
+                uri,
+                ArticlePageResponse.class
+        );
+
+        assertThat(response).isNotNull();
+        assertThat(response.getArticles().size()).isLessThanOrEqualTo(pageSize.intValue());
+        assertThat(response.getArticleCount()).isGreaterThanOrEqualTo(expectedCount);
     }
 
     @Getter
