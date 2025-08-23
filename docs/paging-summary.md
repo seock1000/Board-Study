@@ -140,7 +140,7 @@
         mysql> select * from (select article_id from article where board_id = 1 order by article_id desc limit 30 offset 8999970) t left join article on t.article_id = article.article_id;
         30 rows in set (10.19 sec)
         ```
-        - 해결방법
+         - 해결방법
           1. 테이블 분리
              - 데이터를 한번 더 분리(예를 들어, 1년 단위로 분리 등)
              - 1년 동안 작성된 게시글 단위로 즉시 skip 가능
@@ -150,4 +150,43 @@
              - 시간 범위, 텍스트 검색 기능 등 페이징 집합의 크기를 줄이는 방법
           3. 무한 스크롤 : 커서 기반
              - 아무리 뒷페이지로 가더라도 균등한 조회 속도
-        
+- 게시글 개수 쿼리
+  ```bash
+    mysql> select count(*) from article where board_id = 1;
+    1 row in set (7.68 sec)
+  ```
+  ```bash
+  mysql> explain select count(*) from article where board_id = 1;
+  +----+-------------+---------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+  | id | select_type | table   | partitions | type | possible_keys           | key                     | key_len | ref   | rows    | filtered | Extra       |
+  +----+-------------+---------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+  |  1 | SIMPLE      | article | NULL       | ref  | idx_board_id_article_id | idx_board_id_article_id | 8       | const | 6471862 |   100.00 | Using index |
+  +----+-------------+---------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+  1 row in set, 1 warning (0.00 sec)
+  ```
+  - 커버링 인덱스를 사용하나, 모든 게시글 수를 확인 -> 실제 서비스에 사용하기에는 너무 느림
+  - 전체 게시글 수가 필요한가?
+    - 이동가능한 페이지 번호만 필요함
+    - 이용 중인 페이지 기준에 따라 게시글 개수의 일부만 확인하면 됨
+      - 공식
+        - 현재 페이지(n), 페이지 당 게시글 수(m), 이동 가능한 페이지 개수(k) 일 때, 
+        - 다음 버튼 활성화를 위한 최소 개수 = ((n - 1) / k) + 1) * m * k + 1
+  - 개선 쿼리
+  ```bash
+  mysql> select count(*) from (select article_id from article where board_id = 1 limit 300301) t;
+  1 row in set (0.23 sec)
+  ```
+  - 실행계획
+  ```bash
+    mysql> explain select count(*) from (select article_id from article where board_id = 1 limit 300301) t;
+    +----+-------------+------------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+    | id | select_type | table      | partitions | type | possible_keys           | key                     | key_len | ref   | rows    | filtered | Extra       |
+    +----+-------------+------------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+    |  1 | PRIMARY     | <derived2> | NULL       | ALL  | NULL                    | NULL                    | NULL    | NULL  |  300301 |   100.00 | NULL        |
+    |  2 | DERIVED     | article    | NULL       | ref  | idx_board_id_article_id | idx_board_id_article_id | 8       | const | 6471862 |   100.00 | Using index |
+    +----+-------------+------------+------------+------+-------------------------+-------------------------+---------+-------+---------+----------+-------------+
+    2 rows in set, 1 warning (0.01 sec)
+  ```
+    - limit 300301로 인해 300301개의 게시글만 커버링 인덱스를 통해 조회 후 count(*) 수행 -> 성능 향상
+    - 게시글 개수를 따로 데이터로 관리하며 생성/삭제 시 업데이트 하는 방법 존재
+      - 동시요청의 상황에서 안전하고 정확한 처리가 필요
