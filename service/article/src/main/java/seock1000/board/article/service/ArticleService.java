@@ -11,6 +11,8 @@ import seock1000.board.article.service.response.ArticlePageResponse;
 import seock1000.board.article.service.response.ArticleResponse;
 import seock1000.board.common.snowflake.Snowflake;
 
+import java.util.List;
+
 import static seock1000.board.article.service.PageLimitCalculator.calculatePageLimit;
 
 @Service
@@ -53,6 +55,16 @@ public class ArticleService {
                         calculatePageLimit(page, pageSize, 10L)
                 )
         );
+    }
+
+    public List<ArticleResponse> readAllInfiniteScroll(Long boardId, Long pageSize, Long lastArticleId) {
+        List<Article> articles = lastArticleId == null ?
+                articleRepository.findAllInfiniteScroll(boardId, pageSize) :
+                articleRepository.findAllInfiniteScroll(boardId, pageSize, lastArticleId);
+
+        return articles.stream()
+                .map(ArticleResponse::from)
+                .toList();
     }
 
 }

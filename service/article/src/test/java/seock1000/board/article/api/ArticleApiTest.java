@@ -12,6 +12,8 @@ import seock1000.board.article.ArticleApplication;
 import seock1000.board.article.service.response.ArticlePageResponse;
 import seock1000.board.article.service.response.ArticleResponse;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIterator;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
@@ -151,6 +153,61 @@ public class ArticleApiTest {
         assertThat(response).isNotNull();
         assertThat(response.getArticles().size()).isLessThanOrEqualTo(pageSize.intValue());
         assertThat(response.getArticleCount()).isGreaterThanOrEqualTo(expectedCount);
+    }
+
+    @Test
+    void readAllInfiniteScrollTest() {
+        Long boardId = 1L;
+        Long pageSize = 30L;
+
+        String uri = String.format(
+                "/v1/articles/infinite-scroll?boardId=%d&pageSize=%d",
+                boardId, pageSize
+        );
+
+        List<ArticleResponse> response = List.of(client.getForObject(
+                uri,
+                ArticleResponse[].class
+        ));
+
+        assertThat(response).isNotNull();
+        assertThat(response.size()).isLessThanOrEqualTo(pageSize.intValue());
+        assertThat(response.stream().allMatch(a -> a.getBoardId().equals(boardId))).isTrue();
+    }
+
+    @Test
+    void readAllInfiniteScrollWithLastArticleIdTest() {
+        Long boardId = 1L;
+        Long pageSize = 30L;
+
+        String uri = String.format(
+                "/v1/articles/infinite-scroll?boardId=%d&pageSize=%d",
+                boardId, pageSize
+        );
+
+        List<ArticleResponse> firstResponse = List.of(client.getForObject(
+                uri,
+                ArticleResponse[].class
+        ));
+
+        Long lastArticleId = firstResponse.getLast().getArticleId();
+        String secondUri = String.format(
+                "/v1/articles/infinite-scroll?boardId=%d&pageSize=%d&lastArticleId=%d",
+                boardId, pageSize, lastArticleId
+        );
+
+        List<ArticleResponse> secondResponse = List.of(client.getForObject(
+                secondUri,
+                ArticleResponse[].class
+        ));
+
+        assertThat(secondResponse).isNotNull();
+        assertThat(secondResponse.size()).isLessThanOrEqualTo(pageSize.intValue());
+        assertThat(secondResponse.stream().allMatch(a -> a.getBoardId().equals(boardId))).isTrue();
+        assertThatIterator(secondResponse.iterator())
+                .toIterable()
+                .extracting(ArticleResponse::getArticleId)
+                .allMatch(id -> id < lastArticleId);
     }
 
     @Getter
