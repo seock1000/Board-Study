@@ -23,6 +23,24 @@ public class CommentControllerV2 {
         return commentService.read(commentId);
     }
 
+    @GetMapping("/v2/comments")
+    public CommentPageResponse readAll(
+            @RequestParam("articleId") Long articleId,
+            @RequestParam("page") Long page,
+            @RequestParam("pageSize") Long pageSize
+    ) {
+        return commentService.readAll(articleId, page, pageSize);
+    }
+
+    @GetMapping("/v2/comments/infinite-scroll")
+    public List<CommentResponse> readAllInfiniteScroll(
+            @RequestParam("articleId") Long articleId,
+            @RequestParam("pageSize") Long pageSize,
+            @RequestParam(value = "lastPath", required = false) String lastPath
+    ) {
+        return commentService.readAllInfiniteScroll(articleId, lastPath, pageSize);
+    }
+
     @PostMapping("/v2/comments")
     public CommentResponse create(
             @RequestBody CommentCreateRequestV2 request

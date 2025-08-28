@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import seock1000.board.comment.CommentApplication;
+import seock1000.board.comment.service.response.CommentPageResponse;
 import seock1000.board.comment.service.response.CommentResponse;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
@@ -64,6 +67,89 @@ public class CommentApiV2Test {
         assertThat(response.getPath()).isEqualTo(createResponse.getPath());
         assertThat(response.getContent()).isEqualTo("my content");
         assertThat(response.getArticleId()).isEqualTo(1L);
+    }
+
+    @Test
+    void readAll() {
+        Long articleId = 1L;
+        Long page = 1L;
+        Long pageSize = 30L;
+        String uri = String.format(
+                "/v2/comments?articleId=%d&page=%d&pageSize=%d",
+                articleId, page, pageSize
+        );
+
+        CommentPageResponse response = client.getForObject(
+                uri,
+                CommentPageResponse.class
+        );
+
+        for(CommentResponse comment : response.getComments()) {
+            System.out.println("commentId = " + comment.getCommentId());
+        }
+
+        /**
+         * commentId = 219440878138609665
+         * commentId = 219440878247661574
+         * commentId = 219440878247661587
+         * commentId = 219440878247661596
+         * commentId = 219440878247661606
+         * commentId = 219440878251855878
+         * commentId = 219440878251855888
+         * commentId = 219440878251855898
+         * commentId = 219440878251855907
+         * commentId = 219440878251855916
+         * commentId = 219440878256050185
+         * commentId = 219440878256050193
+         * commentId = 219440878256050203
+         * commentId = 219440878256050215
+         * commentId = 219440878260244481
+         * commentId = 219440878260244489
+         * commentId = 219440878260244504
+         * commentId = 219440878260244514
+         * commentId = 219440878264438792
+         * commentId = 219440878264438802
+         * commentId = 219440878264438812
+         * commentId = 219440878264438821
+         * commentId = 219440878264438831
+         * commentId = 219440878268633094
+         * commentId = 219440878268633103
+         * commentId = 219440878268633112
+         * commentId = 219440878268633123
+         * commentId = 219440878268633130
+         * commentId = 219440878272827392
+         * commentId = 219440878272827401
+         */
+    }
+
+    @Test
+    void infiniteScroll() {
+        Long articleId = 1L;
+        Long pageSize = 30L;
+        String uri = String.format(
+                "/v2/comments/infinite-scroll?articleId=%d&pageSize=%d",
+                articleId, pageSize
+        );
+        List<CommentResponse> response = List.of(client.getForObject(
+                uri,
+                CommentResponse[].class
+        ));
+        CommentResponse last = response.getLast();
+        List<CommentResponse> second = List.of(client.getForObject(
+                String.format(
+                        "/v2/comments/infinite-scroll?articleId=%d&pageSize=%d&lastPath=%s",
+                        articleId, pageSize, last.getPath()
+                ),
+                CommentResponse[].class
+        ));
+        System.out.println("========================= FIRST PAGE =========================");
+        for(CommentResponse comment : response) {
+            System.out.println("commentId = " + comment.getCommentId());
+        }
+        System.out.println("========================= SECOND PAGE =========================");
+        for(CommentResponse comment : second) {
+            System.out.println("commentId = " + comment.getCommentId());
+        }
     }
 
     @Getter

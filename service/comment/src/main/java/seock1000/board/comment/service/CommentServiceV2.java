@@ -7,10 +7,14 @@ import seock1000.board.comment.entity.CommentPath;
 import seock1000.board.comment.entity.CommentV2;
 import seock1000.board.comment.repository.CommentRepositoryV2;
 import seock1000.board.comment.service.request.CommentCreateRequestV2;
+import seock1000.board.comment.service.response.CommentPageResponse;
 import seock1000.board.comment.service.response.CommentResponse;
 import seock1000.board.common.snowflake.Snowflake;
 
+import java.util.List;
+
 import static java.util.function.Predicate.not;
+import static seock1000.board.comment.service.PageLimitCalculator.calculatePageLimit;
 
 @Service
 @RequiredArgsConstructor
@@ -82,5 +86,24 @@ public class CommentServiceV2 {
                     .filter(not(this::hasChildren))
                     .ifPresent(this::delete);
         }
+    }
+
+    public CommentPageResponse readAll(Long articleId, Long page, Long pageSize) {
+        return CommentPageResponse.of(
+                commentRepositoryV2.findAll(articleId, (page - 1) * pageSize, pageSize).stream()
+                        .map(CommentResponse::from)
+                        .toList(),
+                commentRepositoryV2.count(articleId, calculatePageLimit(page, pageSize, 10L))
+        );
+    }
+
+    public List<CommentResponse> readAllInfiniteScroll(Long articleId, String lastPath, Long pageSize) {
+        List<CommentV2> comments = (lastPath == null)
+                ? commentRepositoryV2.findAllInfiniteScroll(articleId, pageSize)
+                : commentRepositoryV2.findAllInfiniteScroll(articleId, lastPath, pageSize);
+
+        return comments.stream()
+                .map(CommentResponse::from)
+                .toList();
     }
 }
