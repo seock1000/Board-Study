@@ -15,3 +15,36 @@
     - 좋아요 데이터와 좋아요 개수의 일관성이 중요
     - 분산 환경을 지향하는 시스템에서 좋아요 수는 좋아요 서비스의 관심사로 보는 것이 자연스러움
     - 좋아요 서비스의 단일 DB에서 하나의 트랜잭션으로 처리
+
+- 동시성 문제
+  - 좋아요 요청이 동시에 들어올 때, 트랜잭션을 사용하더라도 좋아요 개수의 데이터 일관성이 깨질 수 있음
+    - Lost Update 현상
+      - 트랜잭션 A와 트랜잭션 B가 동시에 좋아요 개수를 읽고, 각각 좋아요 개수를 1 증가시킨 후 커밋
+      - 최종적으로 좋아요 개수가 1만 증가하게 됨
+    - 해결 방법
+      - 비관적 락
+        - 데이터 접근 시 충돌 가능성이 있다고 가정
+        - 항상 락을 걸어 데이터를 보호
+        - 데이터에 접근하는 모든 트랜잭션이 순차적으로 처리되어야 하므로 성능 저하 발생
+        - deadlock 발생 가능성 존재
+        - 구현 방법1 : DB 저장 값을 기준으로 update 수행
+          ```aiignore
+            transaction start;
+            insert into article_like (article_like_id, article_id, user_id, created_at) values (?, ?, ?, ?);
+            update article_like_count set like_count = like_count + 1 where article_id = ?;
+            transaction commit;
+          ``` 
+          - 락 점유 시간이 상대적으로 짧음
+          - 저장된 데이터를 기준으로 증감처리하므로 SQL을 직접 전송
+        - 구현 방법2 : 데이터 조회 시 lock을 걸어 처리(for update 구문)
+          ```aiignore
+            transaction start;
+            insert into article_like (article_like_id, article_id, user_id, created_at) values (?, ?, ?, ?);
+            select like_count from article_like_count where article_id = ? for update;
+            update article_like_count set like_count = like_count + 1 where article_id = ?;
+            transaction commit;
+          ```
+          - for update: 해당 레코드에 락을 걸어 다른 트랜잭션이 접근하지 못하게 함
+          - 락 점유 시간이 상대적으로 김
+          - 데이터 조회 후 과정을 수행하므로 락 해제 지연 가능성
+          - 어플리케이션 레벨에서 비즈니스 로직(좋아요 개수 증감) 관리 가능
