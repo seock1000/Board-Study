@@ -210,6 +210,43 @@ public class ArticleApiTest {
                 .allMatch(id -> id < lastArticleId);
     }
 
+    @Test
+    void count_create() {
+        //given
+        ArticleResponse response = create(new ArticleCreateRequest("hi", "content", 1L, 2L));
+        Long boardId = response.getBoardId();
+        Long articleId = response.getArticleId();
+
+        //when
+        var result = client.getForObject(
+                "/v1/articles/boards/" + boardId + "/count",
+                Long.class
+        );
+        //then
+        assertThat(result.longValue()).isEqualTo(1L);
+        delete(articleId);
+    }
+
+    @Test
+    void count_delete() {
+        //given
+        ArticleResponse response = create(new ArticleCreateRequest("hi", "content", 1L, 2L));
+        Long boardId = response.getBoardId();
+        Long articleId = response.getArticleId();
+        client.getForObject(
+                "/v1/articles/boards/" + boardId + "/count",
+                Long.class
+        );
+        //when
+        delete(articleId);
+        //then
+        var count = client.getForObject(
+                "/v1/articles/boards/" + boardId + "/count",
+                Long.class
+        );
+        assertThat(count).isEqualTo(0L);
+    }
+
     @Getter
     @AllArgsConstructor
     static class ArticleCreateRequest {
