@@ -152,6 +152,55 @@ public class CommentApiV2Test {
         }
     }
 
+    @Test
+    void count() {
+        Long articleId = 2L;
+        var response = client.getForObject(
+                "/v2/comments/articles/" + articleId + "/count",
+                Long.class
+        );
+        assertThat(response).isNotNull();
+        assertThat(response).isEqualTo(0L);
+    }
+
+    @Test
+    void countIncrease() {
+        Long articleId = 1L;
+        var before = client.getForObject(
+                "/v2/comments/articles/{articleId}/count",
+                Long.class,
+                articleId
+        );
+        createComment(new CommentApiV2Test.CommentCreateRequestV2(1L, "my content1", null, 1L));
+        var after = client.getForObject(
+                "/v2/comments/articles/{articleId}/count",
+                Long.class,
+                articleId
+        );
+        assertThat(after.longValue()).isEqualTo(before.longValue() + 1L);
+    }
+
+    @Test
+    void countDecrease() {
+        Long articleId = 1L;
+        CommentResponse response = createComment(new CommentApiV2Test.CommentCreateRequestV2(1L, "my content1", null, 1L));
+        var before = client.getForObject(
+                "/v2/comments/articles/{articleId}/count",
+                Long.class,
+                articleId
+        );
+        client.delete(
+                "/v2/comments/{commentId}",
+                response.getCommentId()
+        );
+        var after = client.getForObject(
+                "/v2/comments/articles/{articleId}/count",
+                Long.class,
+                articleId
+        );
+        assertThat(after.longValue()).isEqualTo(before.longValue() - 1L);
+    }
+
     @Getter
     @AllArgsConstructor
     public static class CommentCreateRequestV2 {
