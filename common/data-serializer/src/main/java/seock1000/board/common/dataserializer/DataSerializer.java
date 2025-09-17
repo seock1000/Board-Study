@@ -3,6 +3,7 @@ package seock1000.board.common.dataserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ public class DataSerializer {
     private static ObjectMapper initialize() {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule()) // Java 8 날짜/시간 지원
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // 역직렬화시 알 수 없는 필드 무시
     }
 

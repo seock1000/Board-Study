@@ -9,7 +9,7 @@ public class Event<T extends EventPayload> {
     private EventType type;
     private T payload;
 
-    public static Event of(Long eventId, EventType type, EventPayload payload) {
+    public static Event<EventPayload> of(Long eventId, EventType type, EventPayload payload) {
         Event<EventPayload> event = new Event<>();
         event.eventId = eventId;
         event.type = type;
