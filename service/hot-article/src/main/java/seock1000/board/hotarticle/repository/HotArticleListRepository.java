@@ -1,10 +1,9 @@
-package seock1000.board.hotarticle;
+package seock1000.board.hotarticle.repository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Repository;
@@ -38,6 +37,10 @@ public class HotArticleListRepository {
         });
     }
 
+    public void remove(Long articleId, LocalDateTime time) {
+        redisTemplate.opsForZSet().remove(generateKey(time), String.valueOf(articleId));
+    }
+
     private String generateKey(LocalDateTime time) {
         return generateKey(time.format(TIME_FORMATTER));
     }
@@ -48,6 +51,7 @@ public class HotArticleListRepository {
 
     public List<Long> readAll(String dateStr) {
         String key = generateKey(dateStr);
+        // ZREVRANGE 명령어로 정렬된 집합에서 모든 항목을 내림차순으로 조회
         return redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, -1).stream()
                 .map(ZSetOperations.TypedTuple::getValue)
                 .map(Long::valueOf)

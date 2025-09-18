@@ -2,8 +2,8 @@ package seock1000.board.hotarticle;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.core.AutoConfigureCache;
 import org.springframework.boot.test.context.SpringBootTest;
+import seock1000.board.hotarticle.repository.HotArticleListRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
