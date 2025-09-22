@@ -9,7 +9,7 @@ spring:
       host: 127.0.0.1
       port: 6379
   kafka:
-    bootstrap-servers: 9092
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: seock1000-board-hot-article-service
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer # kafka 전달 시 key, value 역직렬화
