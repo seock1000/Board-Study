@@ -52,3 +52,73 @@
         - Kafka, RabbitMQ 등
         - 장점: 타 서비스와 간접적 의존 -> 결합도 감소, 장애 전 유실 위험 감소, 확장성 용이
         - 단점: Message Broker 구축 및 관리 필요
+
+- Transactional Messaging
+  - Kafka는 다양한 기법으로 신뢰성 있는 메시지 전달을 보장
+  - 단, Producer -> Kafka 이벤트 전달 자체에서 장애 발생 가능
+    - 네트워크 순단, Broker 장애 등
+    - 해결 방안
+      - Transactional Messaging
+        - Distributed Transaction: 분산 시스템간 트랜잭션을 보장하기 위한 기법
+        - 메시지 전송과 타 시스템 작업 간 분산 트랜잭션을 보장하는 방법 
+        - 기법
+          - 2PC (Two-Phase Commit)
+            - Transactional Messaging 과는 다르나 분산 트랜잭션 보장 기법으로 참고
+            - 모든 시스템이 성공적으로 작업은 완료하면 commit, 하나라도 실패하면 rollback
+            - prepare phase: 모든 시스템이 준비 완료 상태인지 확인
+              - Coordinator가 각 참여자에게 트랜잭션 커밋 준비가 되었는지 묻는 단계
+              - 각 참여자는 준비 완료 여부를 Coordinator에게 응답
+            - commit phase: 모든 시스템이 준비 완료 상태이면 commit, 하나라도 실패하면 rollback
+              - 모든 참여자가 준비 완료 응답을 보내면 Coordinator가 commit 명령을 보내는 단계
+            - 문제점
+              - 지연 발생 : 모든 참여자가 준비 완료 상태인지 확인하는 과정에서 지연 발생
+              - 단일 장애 지점(SPOF) : Coordinator가 실패하면 전체 트랜잭션이 중단
+              - 복잡성 증가 : 구현 및 관리가 복잡
+              - Kafka와 MySQL은 자체적으로 2PC를 지원하지 않음
+          - Outbox Pattern(채택)
+            - DB에 Outbox 테이블을 생성하고, 해당 테이블에 메시지 전송 내용을 기록하여 비즈니스 로직 수행과 이벤트 메시지 기록을 단일 트랜잭션을 묶음
+            - Outbox 테이블 미전송 이벤트를 조회 및 전송하고 Outbox 테이블에서 전송 완료 처리
+              - Message Relay : Outbox 테이블에서 미전송 이벤트를 조회하여 메시지 브로커에 전송하고 완료된 경우 Outbox 테이블에서 해당 이벤트를 전송 완료 상태로 업데이트
+            - 장점
+              - 단일 트랜잭션으로 메시지 전송과 비즈니스 로직 수행을 묶어 일관성 유지
+              - 메시지 전송 실패 시에도 비즈니스 로직은 정상 처리
+            - 단점
+              - Outbox 테이블 관리 필요
+              - 추가적인 작업(미전송 이벤트 전송 작업) 필요
+          - Log Tailing
+            - 데이터베이스의 트랜잭션 로그를 추적 및 분석하는 방법
+            - 데이터베이스는 각 트랜잭션의 변경 사항을 로그로 기록
+              - MySQL: binlog, PostgreSQL: WAL, SQL Server: Transaction Log
+              - 로그를 읽어서 Message Broker에 이벤트 전송 가능
+                - CDC(Change Data Capture): 데이터베이스의 변경 사항을 캡처하여 다른 시스템으로 전달하는 기법
+                - Data Table 변경사항을 직접 추적한다면 Outbox Table은 미사용 가능
+                - Outbox의 필요성
+                  - Data Table은 메시지 정보가 Data Table 변경사항에 종속적
+                  - Outbox Table은 부가적인 테이블로 인한 복잡도 및 관리 비용은 늘어나지만, 명확하고 구체적인 이벤트 정보 정의 가능
+            - CDC 기술 활용을 위한 학습, 운영 비용 필요
+      - Eventually Consistent
+        - 메시지 전송을 비즈니스 로직과 별도로 처리
+        - 메시지 전송이 실패하더라도, 비즈니스 로직은 정상 처리
+        - 이후 별도의 프로세스에서 실패한 메시지를 재전송하여 일관성 유지
+  - Outbox Table 설계
+    - outbox_id bigint PK
+    - event_type varchar(100) 이벤트타입
+    - payload varchar(5000) 이벤트데이터
+    - shard_key bigint 샤드키, (이벤트 데이터 기록과 비즈니스 로직에 의한 데이터 변경이 동일한 샤드에 기록되도록 사용)
+    - created_at datetime 생성일시
+
+- 이벤트 메시징 전략
+  - Message Relay로 이벤트 즉시 전달
+    - Outbox Table에서 미전송 이벤트는 10초 간격 polling 하여 지연 최소화
+    - 장점: 이벤트 지연 최소화
+    - 단점: 진입점이 2개 존재 -> 중복 전송 가능성 -> 10초 이내 생성 실패 메시지만 polling
+  - 전송 완료 시 이벤트 삭제 : 간단한 구현을 위함
+  - Coordinator : Message Relay 내에 구현
+    - 각 shard를 담당 worker가 polling 하도록 구현
+    - Coordinator는 중앙 저장소에 3초간격 ping을 보내고 실행 중인 애플리케이션 목록을 파악, 각 애플리케이션에 샤드를 적절히 분산
+  - 중앙저장소: 애플리케이션 목록을 관리
+    - Sorted Set 자료구조 사용
+    - key: application_id, score: last_ping_time
+  - Message Relay
+    - 모듈로 구현
+    - 모듈 의존성을 추가하여 Transactional Messaging 사용 
