@@ -1,0 +1,2 @@
+## 다른 모듈에서 message relay 모듈 등록시 MessageRelayConfig를 읽고 Component Scan을 통해 Bean 등록
+seock1000.board.common.outboxmessagerelay.MessageRelayConfig
