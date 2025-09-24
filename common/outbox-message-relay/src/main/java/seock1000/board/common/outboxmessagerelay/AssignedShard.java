@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.LongStream;
 
 /**
- * 특정 어플리케이션에 할당된 shard 번호들
+ * 특정 어플리케이션이 관리하도록 할당된 shard 번호들
  */
 @Getter
 public class AssignedShard {
