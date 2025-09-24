@@ -11,6 +11,10 @@ import seock1000.board.comment.repository.CommentRepositoryV2;
 import seock1000.board.comment.service.request.CommentCreateRequestV2;
 import seock1000.board.comment.service.response.CommentPageResponse;
 import seock1000.board.comment.service.response.CommentResponse;
+import seock1000.board.common.event.EventType;
+import seock1000.board.common.event.payload.CommentCreatedEventPayload;
+import seock1000.board.common.event.payload.CommentDeletedEventPayload;
+import seock1000.board.common.outboxmessagerelay.OutboxEventPublisher;
 import seock1000.board.common.snowflake.Snowflake;
 
 import java.util.List;
@@ -24,6 +28,7 @@ public class CommentServiceV2 {
     private final CommentRepositoryV2 commentRepositoryV2;
     private final ArticleCommentCountRepository articleCommentCountRepository;
     private final Snowflake snowflake = new Snowflake();
+    private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
     public CommentResponse create(CommentCreateRequestV2 request) {
@@ -48,6 +53,20 @@ public class CommentServiceV2 {
                     seock1000.board.comment.entity.ArticleCommentCount.init(request.getArticleId(), 1L)
             );
         }
+
+        outboxEventPublisher.publish(
+                EventType.COMMENT_CREATED,
+                CommentCreatedEventPayload.builder()
+                        .commentId(comment.getCommentId())
+                        .content(comment.getContent())
+                        .articleId(comment.getArticleId())
+                        .writerId(comment.getWriterId())
+                        .deleted(comment.getDeleted())
+                        .createdAt(comment.getCreatedAt())
+                        .articleCommentCount(count(comment.getArticleId()))
+                        .build(),
+                comment.getArticleId() // shardKey
+        );
 
         return CommentResponse.from(comment);
     }
@@ -74,11 +93,25 @@ public class CommentServiceV2 {
         commentRepositoryV2.findById(commentId)
                 .filter(not(CommentV2::getDeleted))
                 .ifPresent(comment -> {
-                    if(hasChildren(comment)) {
+                    if (hasChildren(comment)) {
                         comment.delete();
                     } else {
                         delete(comment);
                     }
+
+                    outboxEventPublisher.publish(
+                            EventType.COMMENT_DELETED,
+                            CommentDeletedEventPayload.builder()
+                                    .commentId(comment.getCommentId())
+                                    .content(comment.getContent())
+                                    .articleId(comment.getArticleId())
+                                    .writerId(comment.getWriterId())
+                                    .deleted(comment.getDeleted())
+                                    .createdAt(comment.getCreatedAt())
+                                    .articleCommentCount(count(comment.getArticleId()))
+                                    .build(),
+                            comment.getArticleId() // shardKey
+                    );
                 });
     }
 

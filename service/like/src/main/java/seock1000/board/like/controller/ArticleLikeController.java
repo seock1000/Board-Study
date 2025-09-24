@@ -38,7 +38,7 @@ public class ArticleLikeController {
             @PathVariable("articleId") Long articleId,
             @PathVariable("userId") Long userId
     ) {
-        articleLikeService.likePessimisticLock1(articleId, userId);
+        articleLikeService.unlikePessimisticLock1(articleId, userId);
     }
 
     @PostMapping("/v1/article-likes/articles/{articleId}/users/{userId}/pessimistic-lock-2")
