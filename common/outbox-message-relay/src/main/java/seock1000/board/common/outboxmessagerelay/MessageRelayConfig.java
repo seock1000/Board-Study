@@ -35,6 +35,7 @@ public class MessageRelayConfig {
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class); // 역직렬화와 동일하게 String
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 0);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all"); // 모든 ISR 멤버로부터 확인 응답을 기다림(유실방지)
         return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(configProps));
     }

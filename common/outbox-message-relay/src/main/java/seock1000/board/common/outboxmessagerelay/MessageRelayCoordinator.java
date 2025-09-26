@@ -49,7 +49,7 @@ public class MessageRelayCoordinator {
             StringRedisConnection conn = (StringRedisConnection) action;
             String key = generateKey();
             // ZADD 명령어로 정렬된 집합에 현재 시간으로 appId 추가 또는 갱신
-            conn.zAdd(key, Instant.now().getEpochSecond(), APP_ID);
+            conn.zAdd(key, Instant.now().toEpochMilli(), APP_ID);
             // PING_FAILURE_THRESHOLD * PING_INTERVAL_SECONDS 초 이상 응답 없는 appId 죽은 것으로 판단하고 제거
             conn.zRemRangeByScore(
                     key,

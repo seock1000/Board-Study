@@ -53,6 +53,7 @@ public class HotArticleListRepository {
         String key = generateKey(dateStr);
         // ZREVRANGE 명령어로 정렬된 집합에서 모든 항목을 내림차순으로 조회
         return redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, -1).stream()
+                .peek(tuple -> log.info("[HotArticleListRepository.readAll] articleId={} score={}", tuple.getValue(), tuple.getScore()))
                 .map(ZSetOperations.TypedTuple::getValue)
                 .map(Long::valueOf)
                 .toList();

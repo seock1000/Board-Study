@@ -13,9 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Component
@@ -47,7 +45,8 @@ public class MessageRelay {
                     outbox.getEventType().getTopic(),
                     String.valueOf(outbox.getShardKey()),
                     outbox.getPayload()
-            ).get(1, TimeUnit.SECONDS);
+            ).get(1, TimeUnit.SECONDS); // 최대 1초 대기
+
             outboxRepository.delete(outbox);
         } catch (Exception e) {
             log.error("[MessageRelay.publishEvent] outbox={}", outbox, e);
