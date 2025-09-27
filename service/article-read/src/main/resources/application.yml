@@ -1,2 +1,28 @@
 server:
   port: 9005
+
+spring:
+  application:
+    name: seock1000-board-article-read-service
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: seock1000-board-article-read-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer # kafka 전달 시 key, value 역직렬화
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false # auto commit 비활성화
+
+endpoints:
+  seock1000-board-article-service:
+    url: http://127.0.0.1:9000
+  seock1000-board-comment-service:
+    url: http://127.0.0.1:9001
+  seock1000-board-like-service:
+    url: http://127.0.0.1:9002
+  seock1000-board-view-service:
+    url: http://127.0.0.1:9003
+
