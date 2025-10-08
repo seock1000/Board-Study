@@ -13,7 +13,7 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-public class ArticleListRepository {
+public class ArticleIdListRepository {
     private final StringRedisTemplate redisTemplate;
 
     // article-read::board::{boardId}::article-list
