@@ -2,6 +2,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // query model 저장
     implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
     // event 모듈
     implementation project(':common:event')
     implementation project(':common:data-serializer')

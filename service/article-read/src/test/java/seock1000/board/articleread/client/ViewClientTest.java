@@ -60,6 +60,18 @@ class ViewClientTest {
      *   - 원본 데이터 처리가 무거운 경우
      * - 무의미한 중복 요청 트래픽을 줄이는 이점 존재
      * - Request Collapsing : 여러 개의 동일하거나 유사한 요청을 하나의 요청으로 합쳐서 처리하는 기법
+     *
+     * 캐시 최적화 적용 이후
+     * 2025-10-08T17:53:33.947+09:00  INFO 25943 --- [seock1000-board-article-read-service] [    Test worker] s.board.articleread.client.ViewClient    : [ViewClient.count] articleId=1
+     * ===== cache expired =====
+     * 2025-10-08T17:53:36.423+09:00  INFO 25943 --- [seock1000-board-article-read-service] [pool-2-thread-1] s.board.articleread.client.ViewClient    : [ViewClient.count] articleId=1
+     * ===== cache expired =====
+     * 2025-10-08T17:53:38.453+09:00  INFO 25943 --- [seock1000-board-article-read-service] [pool-2-thread-4] s.board.articleread.client.ViewClient    : [ViewClient.count] articleId=1
+     * ===== cache expired =====
+     * 2025-10-08T17:53:40.470+09:00  INFO 25943 --- [seock1000-board-article-read-service] [pool-2-thread-2] s.board.articleread.client.ViewClient    : [ViewClient.count] articleId=1
+     * ===== cache expired =====
+     * 2025-10-08T17:53:42.489+09:00  INFO 25943 --- [seock1000-board-article-read-service] [pool-2-thread-1] s.board.articleread.client.ViewClient    : [ViewClient.count] articleId=1
+     * ===== cache expired =====
      */
     @Test
     void readCacheableMultiThreadTest() throws InterruptedException {
